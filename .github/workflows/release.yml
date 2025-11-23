@@ -18,6 +18,8 @@ env:
 jobs:
   build-and-release:
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -78,26 +80,15 @@ jobs:
 
           echo "DMG_PATH=$DMG_NAME" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release and Upload DMG
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION }}
-          release_name: Release ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
           draft: false
           prerelease: false
-
-      - name: Upload DMG to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ env.DMG_PATH }}
-          asset_name: ${{ env.DMG_PATH }}
-          asset_content_type: application/x-apple-diskimage
+          files: ${{ env.DMG_PATH }}
+          generate_release_notes: true
 
       - name: Upload DMG as artifact
         uses: actions/upload-artifact@v4
