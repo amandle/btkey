@@ -46,9 +46,17 @@ jobs:
             -configuration Release \
             -derivedDataPath build \
             -arch arm64 \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_IDENTITY="-"
+
+      - name: Ad-hoc code sign
+        run: |
+          APP_PATH="build/Build/Products/Release/${{ env.APP_NAME }}.app"
+
+          # Ad-hoc sign the app to prevent "damaged" error
+          codesign --force --deep --sign - "$APP_PATH"
+
+          # Verify the signature
+          codesign --verify --verbose "$APP_PATH"
 
       - name: Install create-dmg
         run: brew install create-dmg
@@ -88,6 +96,17 @@ jobs:
           draft: false
           prerelease: false
           files: ${{ env.DMG_PATH }}
+          body: |
+            ## Installation
+
+            1. Download the DMG file below
+            2. Open the DMG and drag btkey to your Applications folder
+            3. **First time opening**: Right-click the app and select "Open" (or go to System Settings > Privacy & Security and click "Open Anyway")
+
+            macOS will show a security warning because this app is not notarized. This is expected for open-source builds.
+
+            ---
+
           generate_release_notes: true
 
       - name: Upload DMG as artifact
