@@ -37,7 +37,7 @@ struct ContentView: View {
                         }
                     }
                     .labelsHidden()
-                    .onChange(of: selectedDevice) { oldValue, newValue in
+                    .onChange(of: selectedDevice) { newValue in
                         if let device = pairedDevices.first(where: { $0.addressString == newValue }) {
                             selectedDeviceName = device.name ?? "Unknown"
                             UserDefaults.standard.set(newValue, forKey: "bluetoothDeviceAddress")
@@ -74,7 +74,7 @@ struct ContentView: View {
                 Button("Test Connection") {
                     BluetoothManager.shared.connectToConfiguredDevice()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .disabled(selectedDevice.isEmpty)
 
                 Spacer()

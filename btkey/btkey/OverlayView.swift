@@ -17,7 +17,6 @@ struct OverlayView: View {
             Image(systemName: status.icon)
                 .font(.system(size: 48))
                 .foregroundColor(status.color)
-                .symbolRenderingMode(.hierarchical)
 
             // Status text
             VStack(spacing: 4) {
@@ -36,7 +35,7 @@ struct OverlayView: View {
         .frame(width: 280, height: 180)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(.regularMaterial)
+                .fill(Color(NSColor.windowBackgroundColor).opacity(0.95))
                 .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
         )
         .overlay(
