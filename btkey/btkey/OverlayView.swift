@@ -8,24 +8,23 @@
 import SwiftUI
 
 struct OverlayView: View {
-    let status: ConnectionStatus
-    let deviceName: String
+    @ObservedObject var viewModel: OverlayViewModel
 
     var body: some View {
         VStack(spacing: 16) {
-            // Icon
-            Image(systemName: status.icon)
+            Image(systemName: viewModel.status.icon)
                 .font(.system(size: 48))
-                .foregroundColor(status.color)
+                .foregroundColor(viewModel.status.color)
+                .transition(.opacity)
+                .id(viewModel.status)
 
-            // Status text
             VStack(spacing: 4) {
-                Text(status.title)
+                Text(viewModel.status.title)
                     .font(.headline)
                     .foregroundColor(.primary)
 
-                if !deviceName.isEmpty {
-                    Text(deviceName)
+                if !viewModel.deviceName.isEmpty {
+                    Text(viewModel.deviceName)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -42,18 +41,16 @@ struct OverlayView: View {
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(.white.opacity(0.2), lineWidth: 1)
         )
+        .animation(.easeInOut(duration: 0.2), value: viewModel.status)
     }
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        OverlayView(status: .connecting, deviceName: "AirPods Pro")
-        OverlayView(status: .connected, deviceName: "Sony WH-1000XM4")
-        OverlayView(status: .failed, deviceName: "Bose QuietComfort")
-        OverlayView(status: .alreadyConnected, deviceName: "AirPods Max")
-        OverlayView(status: .noDevice, deviceName: "")
-    }
-    .padding()
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.gray.opacity(0.3))
+    let vm = OverlayViewModel()
+    vm.status = .connected
+    vm.deviceName = "AirPods Pro"
+    return OverlayView(viewModel: vm)
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.gray.opacity(0.3))
 }

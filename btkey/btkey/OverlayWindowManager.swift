@@ -6,12 +6,19 @@
 //
 
 import Cocoa
+import Combine
 import SwiftUI
+
+final class OverlayViewModel: ObservableObject {
+    @Published var status: ConnectionStatus = .connecting
+    @Published var deviceName: String = ""
+}
 
 class OverlayWindowManager {
     static let shared = OverlayWindowManager()
 
     private var overlayWindow: NSWindow?
+    private var viewModel: OverlayViewModel?
     private var hideTimer: Timer?
 
     private init() {}
@@ -23,21 +30,35 @@ class OverlayWindowManager {
     }
 
     private func displayOverlay(status: ConnectionStatus, deviceName: String) {
-        // Cancel any existing hide timer
         hideTimer?.invalidate()
 
-        // Remove existing overlay if present
-        overlayWindow?.close()
+        if let window = overlayWindow, let viewModel = viewModel {
+            // Update in place — no window rebuild
+            withAnimation(.easeInOut(duration: 0.2)) {
+                viewModel.status = status
+                viewModel.deviceName = deviceName
+            }
+            window.alphaValue = 1
+            window.orderFrontRegardless()
+        } else {
+            createWindow(status: status, deviceName: deviceName)
+        }
 
-        // Create the overlay content
-        let overlayView = OverlayView(status: status, deviceName: deviceName)
+        scheduleHide(for: status)
+    }
+
+    private func createWindow(status: ConnectionStatus, deviceName: String) {
+        let viewModel = OverlayViewModel()
+        viewModel.status = status
+        viewModel.deviceName = deviceName
+
+        let overlayView = OverlayView(viewModel: viewModel)
         let hostingController = NSHostingController(rootView: overlayView)
+        hostingController.view.wantsLayer = true
+        hostingController.view.layer?.backgroundColor = .clear
 
-        // Get the main screen
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.frame
-
-        // Calculate window size and position (centered on screen)
         let windowSize = NSSize(width: 280, height: 180)
         let windowOrigin = NSPoint(
             x: screenFrame.midX - windowSize.width / 2,
@@ -45,7 +66,6 @@ class OverlayWindowManager {
         )
         let windowFrame = NSRect(origin: windowOrigin, size: windowSize)
 
-        // Create the overlay window
         let window = NSPanel(
             contentRect: windowFrame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -56,15 +76,20 @@ class OverlayWindowManager {
         window.level = .statusBar
         window.isOpaque = false
         window.backgroundColor = .clear
-        window.hasShadow = true
+        window.hasShadow = false
         window.ignoresMouseEvents = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentViewController = hostingController
 
-        overlayWindow = window
+        self.viewModel = viewModel
+        self.overlayWindow = window
         window.makeKeyAndOrderFront(nil)
+    }
 
-        // Auto-hide after 2 seconds
+    private func scheduleHide(for status: ConnectionStatus) {
+        // Keep "connecting" visible until a terminal status arrives
+        guard status != .connecting else { return }
+
         hideTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
             self?.hideOverlay()
         }
@@ -78,6 +103,7 @@ class OverlayWindowManager {
             }, completionHandler: {
                 self?.overlayWindow?.close()
                 self?.overlayWindow = nil
+                self?.viewModel = nil
             })
         }
     }
