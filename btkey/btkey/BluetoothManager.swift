@@ -42,6 +42,7 @@ class BluetoothManager: NSObject {
             if device.isConnected() {
                 print("Device already connected: \(resolvedName)")
                 OverlayWindowManager.shared.showOverlay(status: .alreadyConnected, deviceName: resolvedName)
+                self.fetchBattery(for: resolvedName)
                 return
             }
 
@@ -50,10 +51,18 @@ class BluetoothManager: NSObject {
             if result == kIOReturnSuccess {
                 print("Successfully connected to device")
                 OverlayWindowManager.shared.showOverlay(status: .connected, deviceName: resolvedName)
+                self.fetchBattery(for: resolvedName)
             } else {
                 print("Failed to connect to device: \(result)")
                 OverlayWindowManager.shared.showOverlay(status: .failed, deviceName: resolvedName)
             }
+        }
+    }
+
+    private func fetchBattery(for deviceName: String) {
+        connectionQueue.async {
+            let info = BatteryReader.read(forDeviceNamed: deviceName)
+            OverlayWindowManager.shared.updateBattery(info)
         }
     }
 

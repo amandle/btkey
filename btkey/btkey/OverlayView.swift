@@ -29,6 +29,18 @@ struct OverlayView: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
+
+                if let battery = viewModel.battery {
+                    HStack(spacing: 4) {
+                        Image(systemName: batteryIcon(for: battery))
+                            .font(.system(size: 11, weight: .medium))
+                        Text("\(battery.percent)%")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .monospacedDigit()
+                    }
+                    .foregroundColor(batteryColor(for: battery.percent))
+                    .transition(.opacity)
+                }
             }
         }
         .frame(width: 280, height: 180)
@@ -42,6 +54,26 @@ struct OverlayView: View {
                 .strokeBorder(.white.opacity(0.2), lineWidth: 1)
         )
         .animation(.easeInOut(duration: 0.2), value: viewModel.status)
+        .animation(.easeInOut(duration: 0.2), value: viewModel.battery?.percent)
+    }
+
+    private func batteryIcon(for battery: BatteryInfo) -> String {
+        if battery.isCharging { return "battery.100.bolt" }
+        switch battery.percent {
+        case ...10: return "battery.0"
+        case 11...35: return "battery.25"
+        case 36...60: return "battery.50"
+        case 61...85: return "battery.75"
+        default: return "battery.100"
+        }
+    }
+
+    private func batteryColor(for percent: Int) -> Color {
+        switch percent {
+        case ...20: return .red
+        case 21...40: return .orange
+        default: return .secondary
+        }
     }
 }
 

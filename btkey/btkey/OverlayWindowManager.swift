@@ -12,6 +12,7 @@ import SwiftUI
 final class OverlayViewModel: ObservableObject {
     @Published var status: ConnectionStatus = .connecting
     @Published var deviceName: String = ""
+    @Published var battery: BatteryInfo?
 }
 
 class OverlayWindowManager {
@@ -29,6 +30,15 @@ class OverlayWindowManager {
         }
     }
 
+    func updateBattery(_ battery: BatteryInfo?) {
+        DispatchQueue.main.async { [weak self] in
+            guard let viewModel = self?.viewModel else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                viewModel.battery = battery
+            }
+        }
+    }
+
     private func displayOverlay(status: ConnectionStatus, deviceName: String) {
         hideTimer?.invalidate()
 
@@ -37,6 +47,10 @@ class OverlayWindowManager {
             withAnimation(.easeInOut(duration: 0.2)) {
                 viewModel.status = status
                 viewModel.deviceName = deviceName
+                // Stale battery from a previous device shouldn't leak into a new dialog.
+                if status == .connecting || status == .noDevice || status == .failed {
+                    viewModel.battery = nil
+                }
             }
             window.alphaValue = 1
             window.orderFrontRegardless()
