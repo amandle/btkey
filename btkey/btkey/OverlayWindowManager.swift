@@ -32,9 +32,17 @@ class OverlayWindowManager {
 
     func updateBattery(_ battery: BatteryInfo?) {
         DispatchQueue.main.async { [weak self] in
-            guard let viewModel = self?.viewModel else { return }
+            guard let self = self, let viewModel = self.viewModel else { return }
             withAnimation(.easeInOut(duration: 0.2)) {
                 viewModel.battery = battery
+            }
+            // If battery arrived after the dialog was about to dismiss, give the
+            // user a moment to actually read it.
+            if battery != nil, viewModel.status == .connected || viewModel.status == .alreadyConnected {
+                self.hideTimer?.invalidate()
+                self.hideTimer = Timer.scheduledTimer(withTimeInterval: 1.8, repeats: false) { [weak self] _ in
+                    self?.hideOverlay()
+                }
             }
         }
     }

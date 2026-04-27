@@ -60,9 +60,17 @@ class BluetoothManager: NSObject {
     }
 
     private func fetchBattery(for deviceName: String) {
+        // pmset can lag a freshly-connected accessory by a second or two,
+        // so retry with a short backoff before giving up.
         connectionQueue.async {
-            let info = BatteryReader.read(forDeviceNamed: deviceName)
-            OverlayWindowManager.shared.updateBattery(info)
+            let attempts = [0.0, 0.4, 0.8, 1.2, 2.0, 3.0]
+            for delay in attempts {
+                if delay > 0 { Thread.sleep(forTimeInterval: delay) }
+                if let info = BatteryReader.read(forDeviceNamed: deviceName) {
+                    OverlayWindowManager.shared.updateBattery(info)
+                    return
+                }
+            }
         }
     }
 
