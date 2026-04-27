@@ -30,17 +30,17 @@ struct OverlayView: View {
                         .lineLimit(1)
                 }
 
-                if let battery = viewModel.battery {
-                    HStack(spacing: 4) {
-                        Image(systemName: batteryIcon(for: battery))
-                            .font(.system(size: 11, weight: .medium))
-                        Text("\(battery.percent)%")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .monospacedDigit()
-                    }
-                    .foregroundColor(batteryColor(for: battery.percent))
-                    .transition(.opacity)
+                // Always reserve space so fading the battery line in
+                // doesn't cause a layout shift.
+                HStack(spacing: 4) {
+                    Image(systemName: batteryIcon(for: viewModel.battery))
+                        .font(.system(size: 11, weight: .medium))
+                    Text(viewModel.battery.map { "\($0.percent)%" } ?? "")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .monospacedDigit()
                 }
+                .foregroundColor(viewModel.battery.map { batteryColor(for: $0.percent) } ?? .clear)
+                .opacity(viewModel.battery == nil ? 0 : 1)
             }
         }
         .frame(width: 280, height: 180)
@@ -57,7 +57,8 @@ struct OverlayView: View {
         .animation(.easeInOut(duration: 0.2), value: viewModel.battery?.percent)
     }
 
-    private func batteryIcon(for battery: BatteryInfo) -> String {
+    private func batteryIcon(for battery: BatteryInfo?) -> String {
+        guard let battery = battery else { return "battery.100" }
         if battery.isCharging { return "battery.100.bolt" }
         switch battery.percent {
         case ...10: return "battery.0"
